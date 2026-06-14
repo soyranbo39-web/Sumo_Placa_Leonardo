@@ -1,0 +1,83 @@
+#include <unity.h>
+#include "ControlMovimiento.H"
+#include "Pines.H"
+#include "Arduino.h"
+
+class MotorMock : public IMotor {
+public:
+    int calls = 0;
+    int izq[8] = {0};
+    int der[8] = {0};
+
+    void avanzar(int) override {}
+    void retroceder(int) override {}
+    void detener() override {}
+    void girar(int) override {}
+    void curva(int) override {}
+
+    void mover(int velIzq, int velDer) override {
+        if (calls < 8) {
+            izq[calls] = velIzq;
+            der[calls] = velDer;
+        }
+        calls++;
+    }
+};
+
+static void resetDelays() {
+    g_delayCallCount = 0;
+    for (int i = 0; i < 16; i++) {
+        g_delayValues[i] = 0;
+    }
+}
+
+void test_ataque_frontal_velocidades_correctas(void) {
+    ControlMovimiento c;
+    MotorMock m;
+    resetDelays();
+
+    c.ejecutar({TipoAccion::AtaqueFrontal}, m);
+
+    TEST_ASSERT_EQUAL_INT(1, m.calls);
+    TEST_ASSERT_EQUAL_INT(VelocidadMaxima, m.izq[0]);
+    TEST_ASSERT_EQUAL_INT(VelocidadMaxima, m.der[0]);
+    TEST_ASSERT_EQUAL_INT(0, g_delayCallCount);
+}
+
+void test_evadir_borde_izq_hace_retroceso_y_giro_con_delays(void) {
+    ControlMovimiento c;
+    MotorMock m;
+    resetDelays();
+
+    c.ejecutar({TipoAccion::EvadirBordeIzq}, m);
+
+    TEST_ASSERT_EQUAL_INT(2, m.calls);
+    TEST_ASSERT_EQUAL_INT(-VelocidadRetroceso, m.izq[0]);
+    TEST_ASSERT_EQUAL_INT(-VelocidadRetroceso, m.der[0]);
+    TEST_ASSERT_EQUAL_INT(VelocidadMaxima, m.izq[1]);
+    TEST_ASSERT_EQUAL_INT(-VelocidadMaxima, m.der[1]);
+
+    TEST_ASSERT_EQUAL_INT(2, g_delayCallCount);
+    TEST_ASSERT_EQUAL_UINT32(150, g_delayValues[0]);
+    TEST_ASSERT_EQUAL_UINT32(350, g_delayValues[1]);
+}
+
+void test_busqueda_por_defecto(void) {
+    ControlMovimiento c;
+    MotorMock m;
+    resetDelays();
+
+    c.ejecutar({TipoAccion::Busqueda}, m);
+
+    TEST_ASSERT_EQUAL_INT(1, m.calls);
+    TEST_ASSERT_EQUAL_INT(VelocidadAvance, m.izq[0]);
+    TEST_ASSERT_EQUAL_INT(VelocidadBusquedaDer, m.der[0]);
+}
+
+int main(int, char**) {
+    UNITY_BEGIN();
+    RUN_TEST(test_ataque_frontal_velocidades_correctas);
+    RUN_TEST(test_evadir_borde_izq_hace_retroceso_y_giro_con_delays);
+    RUN_TEST(test_busqueda_por_defecto);
+    return UNITY_END();
+}

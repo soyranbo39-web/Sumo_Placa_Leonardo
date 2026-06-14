@@ -1,18 +1,26 @@
 #include <Arduino.h>
+#include "Motor.H"
+#include "Estados.H"
+#include "ConfiguracionHardware.H"
+#include "Percepcion.H"
+#include "EstrategiaCombate.H"
+#include "ControlMovimiento.H"
 
-// put function declarations here:
-int myFunction(int, int);
+Motor motor;
+Percepcion percepcion;
+EstrategiaCombate estrategia;
+ControlMovimiento controlMovimiento;
+Estado estado(percepcion, estrategia, controlMovimiento);
+ConfiguracionHardware hardware;
 
 void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+  hardware.inicializarPines();
+  estado.setMotor(&motor);
+
+  // Tiempo reglamentario de inicio
+  delay(5000);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-}
-
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+  estado.actualizarEstado();
 }

@@ -6,8 +6,8 @@
 class MotorMock : public IMotor {
 public:
     int calls = 0;
-    int izq[8] = {0};
-    int der[8] = {0};
+    int izq[32] = {0};
+    int der[32] = {0};
 
     void avanzar(int) override {}
     void retroceder(int) override {}
@@ -16,7 +16,7 @@ public:
     void curva(int) override {}
 
     void mover(int velIzq, int velDer) override {
-        if (calls < 8) {
+        if (calls < 32) {
             izq[calls] = velIzq;
             der[calls] = velDer;
         }
@@ -70,8 +70,37 @@ void test_busqueda_por_defecto(void) {
     c.ejecutar({TipoAccion::Busqueda}, m);
 
     TEST_ASSERT_EQUAL_INT(1, m.calls);
-    TEST_ASSERT_EQUAL_INT(VelocidadAvance, m.izq[0]);
-    TEST_ASSERT_EQUAL_INT(VelocidadBusquedaDer, m.der[0]);
+    TEST_ASSERT_TRUE(m.izq[0] > m.der[0]);
+    TEST_ASSERT_TRUE(m.izq[0] < VelocidadAvance);
+    TEST_ASSERT_TRUE(m.der[0] < VelocidadAvance);
+}
+
+void test_busqueda_barre_lentamente_el_ring(void) {
+    ControlMovimiento c;
+    MotorMock m;
+    resetDelays();
+
+    for (int i = 0; i < 8; ++i) {
+        c.ejecutar({TipoAccion::Busqueda}, m);
+    }
+
+    TEST_ASSERT_EQUAL_INT(8, m.calls);
+    TEST_ASSERT_TRUE(m.izq[0] > m.der[0]);
+    TEST_ASSERT_EQUAL_INT(m.izq[3], m.der[3]);
+    TEST_ASSERT_EQUAL_INT(m.izq[4], m.der[4]);
+    TEST_ASSERT_TRUE(m.izq[7] < m.der[7]);
+}
+
+void test_busqueda_recuerda_el_ultimo_lado_detectado(void) {
+    ControlMovimiento c;
+    MotorMock m;
+    resetDelays();
+
+    c.ejecutar({TipoAccion::AtaqueFrontal, 4}, m);
+    c.ejecutar({TipoAccion::Busqueda}, m);
+
+    TEST_ASSERT_EQUAL_INT(2, m.calls);
+    TEST_ASSERT_TRUE(m.izq[1] < m.der[1]);
 }
 
 int main(int, char**) {
@@ -79,5 +108,7 @@ int main(int, char**) {
     RUN_TEST(test_ataque_frontal_velocidades_correctas);
     RUN_TEST(test_evadir_borde_izq_hace_retroceso_y_giro_con_delays);
     RUN_TEST(test_busqueda_por_defecto);
+    RUN_TEST(test_busqueda_barre_lentamente_el_ring);
+    RUN_TEST(test_busqueda_recuerda_el_ultimo_lado_detectado);
     return UNITY_END();
 }

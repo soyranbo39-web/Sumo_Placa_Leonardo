@@ -8,6 +8,9 @@
 class EstrategiaCombate: public IEstrategiaCombate {
 public:
     DecisionMovimiento decidir(const LecturasSensores& lecturas) const override;
+
+private:
+    static int8_t calcularErrorDireccion(const LecturasSensores& lecturas);
 };
 
 #endif

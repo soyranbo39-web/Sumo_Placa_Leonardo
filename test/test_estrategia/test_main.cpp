@@ -43,6 +43,14 @@ void test_busqueda_si_no_hay_deteccion(void) {
     EstrategiaCombate e;
     DecisionMovimiento d = e.decidir(L(false, false, false, false, false, false, false));
     TEST_ASSERT_EQUAL_INT((int)TipoAccion::Busqueda, (int)d.tipo);
+    TEST_ASSERT_EQUAL_INT(0, d.error);
+}
+
+void test_error_de_ajuste_se_calcula_por_promedio_de_sensores(void) {
+    EstrategiaCombate e;
+    DecisionMovimiento d = e.decidir(L(false, false, true, true, false, false, false));
+    TEST_ASSERT_EQUAL_INT((int)TipoAccion::CorregirIzq, (int)d.tipo);
+    TEST_ASSERT_TRUE(d.error < 0);
 }
 
 int main(int, char**) {
@@ -51,5 +59,6 @@ int main(int, char**) {
     RUN_TEST(test_frontal_sobre_45_y_laterales);
     RUN_TEST(test_45_izq_sobre_45_der_y_laterales);
     RUN_TEST(test_busqueda_si_no_hay_deteccion);
+    RUN_TEST(test_error_de_ajuste_se_calcula_por_promedio_de_sensores);
     return UNITY_END();
 }

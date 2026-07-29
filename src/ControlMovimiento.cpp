@@ -26,16 +26,16 @@ void ControlMovimiento::ejecutar(const DecisionMovimiento& decision, IMotor& mot
         motor.mover(VelocidadMaxima, VelocidadMaxima);
         break;
     case TipoAccion::CorregirIzq:
-        motor.mover(VelocidadMinima, VelocidadMaxima);
+        motor.mover(VelocidadCurva, VelocidadMaxima);
         break;
     case TipoAccion::CorregirDer:
-        motor.mover(VelocidadMaxima, VelocidadMinima);
+        motor.mover(VelocidadMaxima, VelocidadCurva);
         break;
     case TipoAccion::DefensaIzq:
-        motor.mover(-VelocidadGiro, VelocidadGiro);
+        motor.mover(-VelocidadPivoteLateral, VelocidadMaxima);
         break;
     case TipoAccion::DefensaDer:
-        motor.mover(VelocidadGiro, -VelocidadGiro);
+        motor.mover(VelocidadMaxima, -VelocidadPivoteLateral);
         break;
     case TipoAccion::Busqueda:
     default:

@@ -14,10 +14,11 @@ Estado estado(percepcion, estrategia, controlMovimiento);
 ConfiguracionHardware hardware;
 
 void setup() {
+
   hardware.inicializarPines();
+  
+
   estado.setMotor(&motor);
-
-
 }
 
 void loop() {

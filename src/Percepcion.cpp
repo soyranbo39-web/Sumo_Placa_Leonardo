@@ -2,12 +2,18 @@
 #include "Percepcion.H"
 #include "Pines.H"
 
-constexpr uint8_t CICLOS_RETENCION_ENEMIGO = 2;
+// -- AJUSTES DE PERSISTENCIA EXTREMA --
+constexpr uint8_t RETENCION_CORTA = 4;  // Aumentado a 4. Evita que el robot deje de empujar si hay rebotes físicos.
+constexpr uint8_t RETENCION_LARGA = 12; // Aumentado a 12. Persistencia letal para atrapar enemigos rápidos a los lados.
+
 constexpr uint8_t MUESTRAS_LINEA = 2;
 constexpr uint8_t MAYORIA_LINEA = 1;
 constexpr int MARGEN_BORDE = 18;
-constexpr uint8_t RETENCION_BITS = 2;
-constexpr uint16_t RETENCION_MASK = (1u << RETENCION_BITS) - 1u;
+
+// Usamos 4 bits por sensor (permite guardar hasta 15 ciclos)
+constexpr uint8_t RETENCION_BITS = 4;
+constexpr uint32_t RETENCION_MASK = (1u << RETENCION_BITS) - 1u;
+
 constexpr uint8_t RETENCION_LAT_IZQ = 0;
 constexpr uint8_t RETENCION_C45_IZQ = 1;
 constexpr uint8_t RETENCION_FRONTAL = 2;
@@ -54,13 +60,16 @@ uint8_t Percepcion::obtenerRetencion(uint8_t indice) const {
 
 void Percepcion::establecerRetencion(uint8_t indice, uint8_t valor) const {
     const uint8_t desplazamiento = indice * RETENCION_BITS;
-    const uint16_t mascara = static_cast<uint16_t>(RETENCION_MASK << desplazamiento);
-    retenciones = static_cast<uint16_t>((retenciones & ~mascara) | ((valor & RETENCION_MASK) << desplazamiento));
+    const uint32_t mascara = static_cast<uint32_t>(RETENCION_MASK) << desplazamiento;
+    retenciones = (retenciones & ~mascara) | ((static_cast<uint32_t>(valor) & RETENCION_MASK) << desplazamiento);
 }
 
 bool Percepcion::aplicarRetencion(uint8_t indice, bool detectado) const {
     if (detectado) {
-        establecerRetencion(indice, CICLOS_RETENCION_ENEMIGO);
+        uint8_t ciclos = (indice == RETENCION_LAT_IZQ || indice == RETENCION_LAT_DER) ? 
+                         RETENCION_LARGA : RETENCION_CORTA;
+                         
+        establecerRetencion(indice, ciclos);
         return true;
     }
 
@@ -78,7 +87,6 @@ LecturasSensores Percepcion::leer() const {
     lecturas.lineaIzq = detectarLineaSeguro(S_PISO_IZQ);
     lecturas.lineaDer = detectarLineaSeguro(S_PISO_DER);
 
-    // Todos los sensores de detección de enemigo son digitales
     lecturas.latIzq = aplicarRetencion(RETENCION_LAT_IZQ, lecturaDigitalMayoritaria(S_LAT_IZQ));
     lecturas.c45Izq = aplicarRetencion(RETENCION_C45_IZQ, lecturaDigitalMayoritaria(S_FRONT_IZQ));
     lecturas.frontal = aplicarRetencion(RETENCION_FRONTAL, lecturaDigitalMayoritaria(S_FRONT_CEN));

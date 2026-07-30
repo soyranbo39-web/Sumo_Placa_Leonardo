@@ -11,6 +11,8 @@ public:
 
 private:
     static int8_t calcularErrorDireccion(const LecturasSensores& lecturas);
+    mutable int8_t ultimoErrorObjetivo = 0;
+    mutable uint8_t retencionObjetivo = 0;
 };
 
 #endif

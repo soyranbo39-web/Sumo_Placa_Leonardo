@@ -113,7 +113,8 @@ void test_persistencia_deteccion_enemigo_y_desaturacion(void) {
     );
 
     TEST_ASSERT_TRUE(deteccionesSilencio <= 2ul);
-    TEST_ASSERT_TRUE(silencio.busqueda >= 38ul);
+    TEST_ASSERT_TRUE(silencio.busqueda >= 30ul);
+    TEST_ASSERT_TRUE((silencio.frontal + silencio.corregir + silencio.defensa) <= 10ul);
 }
 
 void test_rendimiento_reaccion_enemigo_muestras_seguidas(void) {

@@ -65,6 +65,17 @@ void test_sensor_lateral_derecho_activa_defensa_derecha(void) {
     TEST_ASSERT_EQUAL_INT((int)TipoAccion::DefensaDer, (int)d.tipo);
 }
 
+void test_persistencia_objetivo_evitar_busqueda_inmediata(void) {
+    EstrategiaCombate e;
+
+    DecisionMovimiento d0 = e.decidir(L(false, false, true, false, false, false, false));
+    TEST_ASSERT_EQUAL_INT((int)TipoAccion::DefensaIzq, (int)d0.tipo);
+
+    DecisionMovimiento d1 = e.decidir(L(false, false, false, false, false, false, false));
+    TEST_ASSERT_EQUAL_INT((int)TipoAccion::CorregirIzq, (int)d1.tipo);
+    TEST_ASSERT_TRUE(d1.error < 0);
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_prioriza_borde_sobre_todo);
@@ -74,5 +85,6 @@ int main(int, char**) {
     RUN_TEST(test_error_de_ajuste_se_calcula_por_promedio_de_sensores);
     RUN_TEST(test_sensor_lateral_izquierdo_activa_defensa_izquierda);
     RUN_TEST(test_sensor_lateral_derecho_activa_defensa_derecha);
+    RUN_TEST(test_persistencia_objetivo_evitar_busqueda_inmediata);
     return UNITY_END();
 }

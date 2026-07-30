@@ -7,6 +7,7 @@ constexpr int8_t PESO_C45_IZQ = -2;
 constexpr int8_t PESO_FRONTAL = 0;
 constexpr int8_t PESO_C45_DER = 2;
 constexpr int8_t PESO_LAT_DER = 4;
+constexpr uint8_t RETENCION_OBJETIVO_CICLOS = 6;
 }
 
 int8_t EstrategiaCombate::calcularErrorDireccion(const LecturasSensores& lecturas) {
@@ -39,6 +40,7 @@ int8_t EstrategiaCombate::calcularErrorDireccion(const LecturasSensores& lectura
 
 DecisionMovimiento EstrategiaCombate::decidir(const LecturasSensores& lecturas) const {
     if (lecturas.lineaIzq || lecturas.lineaDer) {
+        retencionObjetivo = 0;
         if (lecturas.lineaIzq && !lecturas.lineaDer) {
             return DecisionMovimiento{TipoAccion::EvadirBordeIzq, 0};
         }
@@ -50,11 +52,23 @@ DecisionMovimiento EstrategiaCombate::decidir(const LecturasSensores& lecturas) 
 
     const bool hayEnemigo = lecturas.latIzq || lecturas.c45Izq || lecturas.frontal || lecturas.c45Der || lecturas.latDer;
     if (!hayEnemigo) {
+        if (retencionObjetivo > 0) {
+            --retencionObjetivo;
+            if (ultimoErrorObjetivo <= -2) {
+                return DecisionMovimiento{TipoAccion::CorregirIzq, ultimoErrorObjetivo};
+            }
+            if (ultimoErrorObjetivo >= 2) {
+                return DecisionMovimiento{TipoAccion::CorregirDer, ultimoErrorObjetivo};
+            }
+            return DecisionMovimiento{TipoAccion::AtaqueFrontal, 0};
+        }
         return DecisionMovimiento{TipoAccion::Busqueda, 0};
     }
 
     if (lecturas.frontal || lecturas.c45Izq || lecturas.c45Der) {
         const int8_t error = calcularErrorDireccion(lecturas);
+        ultimoErrorObjetivo = error;
+        retencionObjetivo = RETENCION_OBJETIVO_CICLOS;
         if (lecturas.frontal) {
             return DecisionMovimiento{TipoAccion::AtaqueFrontal, error};
         }
@@ -67,10 +81,14 @@ DecisionMovimiento EstrategiaCombate::decidir(const LecturasSensores& lecturas) 
     }
 
     if (lecturas.latIzq) {
+        ultimoErrorObjetivo = PESO_LAT_IZQ;
+        retencionObjetivo = RETENCION_OBJETIVO_CICLOS;
         return DecisionMovimiento{TipoAccion::DefensaIzq, 0};
     }
 
     if (lecturas.latDer) {
+        ultimoErrorObjetivo = PESO_LAT_DER;
+        retencionObjetivo = RETENCION_OBJETIVO_CICLOS;
         return DecisionMovimiento{TipoAccion::DefensaDer, 0};
     }
 

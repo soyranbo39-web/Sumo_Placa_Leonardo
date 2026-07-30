@@ -116,8 +116,8 @@ void test_defensa_izq_hace_pivote_con_una_sola_llanta(void) {
     c.ejecutar({TipoAccion::DefensaIzq}, m);
 
     TEST_ASSERT_EQUAL_INT(1, m.calls);
-    TEST_ASSERT_EQUAL_INT(0, m.izq[0]);
-    TEST_ASSERT_EQUAL_INT(VelocidadPivoteLateral, m.der[0]);
+    TEST_ASSERT_EQUAL_INT(VelocidadPivoteLateral, m.izq[0]);
+    TEST_ASSERT_EQUAL_INT(0, m.der[0]);
     TEST_ASSERT_EQUAL_INT(0, g_delayCallCount);
 }
 
@@ -129,8 +129,8 @@ void test_defensa_der_hace_pivote_con_una_sola_llanta(void) {
     c.ejecutar({TipoAccion::DefensaDer}, m);
 
     TEST_ASSERT_EQUAL_INT(1, m.calls);
-    TEST_ASSERT_EQUAL_INT(VelocidadPivoteLateral, m.izq[0]);
-    TEST_ASSERT_EQUAL_INT(0, m.der[0]);
+    TEST_ASSERT_EQUAL_INT(0, m.izq[0]);
+    TEST_ASSERT_EQUAL_INT(VelocidadPivoteLateral, m.der[0]);
     TEST_ASSERT_EQUAL_INT(0, g_delayCallCount);
 }
 

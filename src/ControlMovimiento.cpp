@@ -12,18 +12,11 @@ constexpr int16_t PID_KD = 18;
 constexpr int16_t INTEGRAL_LIMITE = 400;
 constexpr int16_t CORRECCION_LIMITE = 120;
 constexpr int16_t BUSQUEDA_BASE = 64;
-constexpr int8_t BUSQUEDA_CORRECCIONES[] = {-20, -14, -8, 0, 0, 8, 14, 20};
+constexpr int8_t BUSQUEDA_CORRECCIONES[] = {-30, -20, -10, 0, 0, 10, 20, 30};
 constexpr uint8_t BUSQUEDA_FASES = 8;
 constexpr uint8_t BUSQUEDA_FASE_MASK = BUSQUEDA_FASES - 1u;
 constexpr uint8_t BUSQUEDA_FASE_MASCARA = 0x07;
 constexpr uint8_t BUSQUEDA_SESGO_MASCARA = 0x80;
-
-void ejecutarEvasion(IMotor& motor, int giroIzq, int giroDer) {
-    motor.mover(-VelocidadRetroceso, -VelocidadRetroceso);
-    delay(RETROCESO_MS);
-    motor.mover(giroIzq, giroDer);
-    delay(GIRO_EVASION_MS);
-}
 
 void moverSuave(IMotor& motor, int16_t baseIzq, int16_t baseDer, int16_t correccion) {
     const int16_t velocidadIzq = limitar<int16_t>(static_cast<int16_t>(baseIzq - correccion), -VelocidadMaxima, VelocidadMaxima);
@@ -55,9 +48,9 @@ int8_t ControlMovimiento::obtenerSesgoBusqueda() const {
 
 void ControlMovimiento::actualizarBusqueda(int8_t error) const {
     if (error < 0) {
-        estadoBusqueda &= static_cast<uint8_t>(~BUSQUEDA_SESGO_MASCARA);
+        estadoBusqueda = static_cast<uint8_t>((estadoBusqueda & BUSQUEDA_SESGO_MASCARA) & static_cast<uint8_t>(~BUSQUEDA_FASE_MASCARA));
     } else if (error > 0) {
-        estadoBusqueda |= BUSQUEDA_SESGO_MASCARA;
+        estadoBusqueda = static_cast<uint8_t>(((estadoBusqueda | BUSQUEDA_SESGO_MASCARA)) & static_cast<uint8_t>(~BUSQUEDA_FASE_MASCARA));
     }
 }
 
@@ -110,11 +103,11 @@ void ControlMovimiento::ejecutar(const DecisionMovimiento& decision, IMotor& mot
         break;
     case TipoAccion::DefensaIzq:
         regulador.reiniciar();
-        motor.mover(0, VelocidadPivoteLateral);
+        motor.mover(VelocidadPivoteLateral, 0);
         break;
     case TipoAccion::DefensaDer:
         regulador.reiniciar();
-        motor.mover(VelocidadPivoteLateral, 0);
+        motor.mover(0, VelocidadPivoteLateral);
         break;
     case TipoAccion::Busqueda:
         if (ultimaAccion == TipoAccion::AtaqueFrontal ||

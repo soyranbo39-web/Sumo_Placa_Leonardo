@@ -4,12 +4,14 @@
 
 class IMotor {
 public:
-    virtual void avanzar(int velocidad) = 0;
-    virtual void retroceder(int velocidad) = 0;
-    virtual void detener() = 0;
-    virtual void girar(int velocidad) = 0;
-    virtual void curva(int velocidad) = 0;
-    virtual void mover(int velIzq, int velDer) = 0;
+
+virtual void Adelante(int velocidad) = 0;
+virtual void Atras(int velocidad) = 0;
+virtual void GirarIzquierda(int velocidad) = 0;
+virtual void GirarDerecha(int velocidad) = 0;
+virtual void Detener() = 0;
+virtual void seguirEnemigo(int velocidad) = 0;
+
     
 };
 

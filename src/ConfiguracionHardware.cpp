@@ -1,18 +1,28 @@
 #include <Arduino.h>
-#include "ConfiguracionHardware.H"
 #include "Pines.H"
+#include "ConfiguracionInicial.h"
 
-void ConfiguracionHardware::inicializarPines() const {
-    pinMode(S_FRONT_IZQ, INPUT);
-    pinMode(S_FRONT_CEN, INPUT);
-    pinMode(S_FRONT_DER, INPUT);
-    pinMode(S_LAT_IZQ, INPUT);
-    pinMode(S_LAT_DER, INPUT);
+class ConfiguracionInicial : public ConfiguracionInicial {
+public:
+    ConfiguracionInicial(
+        Estrategias& estrategiasRef,
+        LecturaSensoresEnemigos& lecturaSensoresEnemigosRef,
+        SensoresDePiso& sensoresDePisoRef,
+        Motor& motorRef
+    );
+    {
+            estrategias = estrategiasRef;
+            lecturaSensoresEnemigos = lecturaSensoresEnemigosRef;
+            sensoresDePiso = sensoresDePisoRef;
+            motor = motorRef;
+    }
+    void inicializarComponentes( ) {
+        estrategias.ejecutarEstrategia();
+        lecturaSensoresEnemigos.inicializarSensoresEnemigos();
+        sensoresDePiso.inicializarSensoresDePiso();
+        motor.Detener();
+    }
 
-    pinMode(PWMA, OUTPUT);
-    pinMode(MA1A, OUTPUT);
-    pinMode(MA2A, OUTPUT);
-    pinMode(PWMB, OUTPUT);
-    pinMode(MA1B, OUTPUT);
-    pinMode(MA2B, OUTPUT);
-}
+};  
+
+

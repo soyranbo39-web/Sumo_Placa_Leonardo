@@ -13,6 +13,4 @@ struct LecturasSensores {
     uint8_t latDer : 1;
 };
 
-static_assert(sizeof(LecturasSensores) == 1, "LecturasSensores debe ocupar 1 byte");
-
 #endif

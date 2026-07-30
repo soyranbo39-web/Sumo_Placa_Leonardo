@@ -22,16 +22,6 @@
 
 
 
-#define VelocidadMaxima 255
-#define VelocidadMinima 50
-#define VelocidadCurva 150
-#define VelocidadGiro 200
-#define VelocidadRetroceso 255
-#define VelocidadAvance 160
-#define VelocidadAtaqueFrontal 255
-#define VelocidadBusquedaDer 90
-#define VelocidadPivoteLateral 220
-
 
 
 

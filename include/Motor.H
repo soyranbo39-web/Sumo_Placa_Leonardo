@@ -6,12 +6,13 @@
 
 class Motor: public IMotor {
 public:
-    void avanzar(int velocidad) override;
-    void retroceder(int velocidad) override;
-    void detener() override;
-    void girar(int velocidad) override;
-    void curva(int velocidad) override;
-    void mover(int velIzq, int velDer) override;
+ 
+    void Adelante(int velocidad) override;
+    void Atras(int velocidad) override;
+    void GirarIzquierda(int velocidad) override;
+    void GirarDerecha(int velocidad) override;
+    void Detener() override;
+    void seguirEnemigo(int velocidad) override;
 };
 
 #endif

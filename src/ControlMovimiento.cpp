@@ -3,8 +3,9 @@
 #include "Pines.H"
 
 namespace {
-constexpr unsigned long RETROCESO_MS = 150;
-constexpr unsigned long GIRO_EVASION_MS = 350;
+constexpr unsigned long RETROCESO_MS = 250;
+constexpr unsigned long GIRO_EVASION_MS = 200;
+constexpr unsigned long GIRO_EVASION_MS2 = 300;
 constexpr int16_t PID_ESCALA = 16;
 constexpr int16_t PID_KP = 42;
 constexpr int16_t PID_KI = 3;
@@ -25,10 +26,30 @@ void ejecutarEvasion(IMotor& motor, int giroIzq, int giroDer) {
     delay(GIRO_EVASION_MS);
 }
 
+void ejecutarEvasionUnaLlanta(IMotor& motor, bool moverIzquierda) {
+    if (moverIzquierda) {
+        motor.mover(VelocidadPivoteLateral, 0);
+    } else {
+        motor.mover(0, VelocidadPivoteLateral);
+    }
+    delay(GIRO_EVASION_MS2);
+}
+
 void moverSuave(IMotor& motor, int16_t baseIzq, int16_t baseDer, int16_t correccion) {
     const int16_t velocidadIzq = limitar<int16_t>(static_cast<int16_t>(baseIzq - correccion), -VelocidadMaxima, VelocidadMaxima);
     const int16_t velocidadDer = limitar<int16_t>(static_cast<int16_t>(baseDer + correccion), -VelocidadMaxima, VelocidadMaxima);
     motor.mover(static_cast<int>(velocidadIzq), static_cast<int>(velocidadDer));
+}
+
+void moverPivoteUnaLlanta(IMotor& motor, bool moverIzquierda, int16_t correccion) {
+    if (moverIzquierda) {
+        const int16_t velocidadIzq = limitar<int16_t>(static_cast<int16_t>(VelocidadPivoteLateral - correccion), 0, VelocidadMaxima);
+        motor.mover(static_cast<int>(velocidadIzq), 0);
+        return;
+    }
+
+    const int16_t velocidadDer = limitar<int16_t>(static_cast<int16_t>(VelocidadPivoteLateral + correccion), 0, VelocidadMaxima);
+    motor.mover(0, static_cast<int>(velocidadDer));
 }
 }
 
@@ -76,11 +97,11 @@ void ControlMovimiento::ejecutar(const DecisionMovimiento& decision, IMotor& mot
     switch (decision.tipo) {
     case TipoAccion::EvadirBordeIzq:
         regulador.reiniciar();
-        ejecutarEvasion(motor, VelocidadMaxima, -VelocidadMaxima);
+        ejecutarEvasionUnaLlanta(motor, true);
         break;
     case TipoAccion::EvadirBordeDer:
         regulador.reiniciar();
-        ejecutarEvasion(motor, -VelocidadMaxima, VelocidadMaxima);
+        ejecutarEvasionUnaLlanta(motor, false);
         break;
     case TipoAccion::EvadirBordeAmbos:
         regulador.reiniciar();
@@ -96,10 +117,10 @@ void ControlMovimiento::ejecutar(const DecisionMovimiento& decision, IMotor& mot
         moverSuave(motor, VelocidadMaxima, VelocidadCurva, calcularPID(regulador, decision.error));
         break;
     case TipoAccion::DefensaIzq:
-        moverSuave(motor, -VelocidadPivoteLateral, VelocidadMaxima, calcularPID(regulador, decision.error));
+        moverPivoteUnaLlanta(motor, false, calcularPID(regulador, decision.error));
         break;
     case TipoAccion::DefensaDer:
-        moverSuave(motor, VelocidadMaxima, -VelocidadPivoteLateral, calcularPID(regulador, decision.error));
+        moverPivoteUnaLlanta(motor, true, calcularPID(regulador, decision.error));
         break;
     case TipoAccion::Busqueda:
     default:

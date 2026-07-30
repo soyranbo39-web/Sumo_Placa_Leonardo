@@ -54,12 +54,26 @@ void test_evadir_borde_izq_hace_retroceso_y_giro_con_delays(void) {
     TEST_ASSERT_EQUAL_INT(2, m.calls);
     TEST_ASSERT_EQUAL_INT(-VelocidadRetroceso, m.izq[0]);
     TEST_ASSERT_EQUAL_INT(-VelocidadRetroceso, m.der[0]);
-    TEST_ASSERT_EQUAL_INT(VelocidadMaxima, m.izq[1]);
-    TEST_ASSERT_EQUAL_INT(-VelocidadMaxima, m.der[1]);
+    TEST_ASSERT_EQUAL_INT(VelocidadPivoteLateral, m.izq[1]);
+    TEST_ASSERT_EQUAL_INT(0, m.der[1]);
 
     TEST_ASSERT_EQUAL_INT(2, g_delayCallCount);
-    TEST_ASSERT_EQUAL_UINT32(150, g_delayValues[0]);
-    TEST_ASSERT_EQUAL_UINT32(350, g_delayValues[1]);
+    TEST_ASSERT_EQUAL_UINT32(250, g_delayValues[0]);
+    TEST_ASSERT_EQUAL_UINT32(200, g_delayValues[1]);
+}
+
+void test_evadir_borde_der_hace_retroceso_y_giro_con_una_llanta(void) {
+    ControlMovimiento c;
+    MotorMock m;
+    resetDelays();
+
+    c.ejecutar({TipoAccion::EvadirBordeDer}, m);
+
+    TEST_ASSERT_EQUAL_INT(2, m.calls);
+    TEST_ASSERT_EQUAL_INT(-VelocidadRetroceso, m.izq[0]);
+    TEST_ASSERT_EQUAL_INT(-VelocidadRetroceso, m.der[0]);
+    TEST_ASSERT_EQUAL_INT(0, m.izq[1]);
+    TEST_ASSERT_EQUAL_INT(VelocidadPivoteLateral, m.der[1]);
 }
 
 void test_busqueda_por_defecto(void) {
@@ -103,12 +117,39 @@ void test_busqueda_recuerda_el_ultimo_lado_detectado(void) {
     TEST_ASSERT_TRUE(m.izq[1] < m.der[1]);
 }
 
+void test_defensa_izq_mueve_solo_llanta_derecha(void) {
+    ControlMovimiento c;
+    MotorMock m;
+    resetDelays();
+
+    c.ejecutar({TipoAccion::DefensaIzq}, m);
+
+    TEST_ASSERT_EQUAL_INT(1, m.calls);
+    TEST_ASSERT_EQUAL_INT(0, m.izq[0]);
+    TEST_ASSERT_TRUE(m.der[0] > 0);
+}
+
+void test_defensa_der_mueve_solo_llanta_izquierda(void) {
+    ControlMovimiento c;
+    MotorMock m;
+    resetDelays();
+
+    c.ejecutar({TipoAccion::DefensaDer}, m);
+
+    TEST_ASSERT_EQUAL_INT(1, m.calls);
+    TEST_ASSERT_TRUE(m.izq[0] > 0);
+    TEST_ASSERT_EQUAL_INT(0, m.der[0]);
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_ataque_frontal_velocidades_correctas);
     RUN_TEST(test_evadir_borde_izq_hace_retroceso_y_giro_con_delays);
+    RUN_TEST(test_evadir_borde_der_hace_retroceso_y_giro_con_una_llanta);
     RUN_TEST(test_busqueda_por_defecto);
     RUN_TEST(test_busqueda_barre_lentamente_el_ring);
     RUN_TEST(test_busqueda_recuerda_el_ultimo_lado_detectado);
+    RUN_TEST(test_defensa_izq_mueve_solo_llanta_derecha);
+    RUN_TEST(test_defensa_der_mueve_solo_llanta_izquierda);
     return UNITY_END();
 }

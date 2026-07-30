@@ -3,8 +3,8 @@
 #include "Pines.H"
 
 namespace {
-constexpr unsigned long RETROCESO_MS = 280;
-constexpr unsigned long GIRO_EVASION_MS = 260;
+constexpr unsigned long RETROCESO_MS = 300;
+constexpr unsigned long GIRO_EVASION_MS = 360;
 constexpr int16_t PID_ESCALA = 16;
 constexpr int16_t PID_KP = 42;
 constexpr int16_t PID_KI = 3;

@@ -12,6 +12,8 @@ enum class TipoAccion : uint8_t {
     CorregirDer,
     DefensaIzq,
     DefensaDer,
+    AtaqueLateralIzq,
+    AtaqueLateralDer,
     Busqueda
 };
 

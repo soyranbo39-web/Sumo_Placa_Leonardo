@@ -110,18 +110,28 @@ void ControlMovimiento::ejecutar(const DecisionMovimiento& decision, IMotor& mot
         break;
     case TipoAccion::DefensaIzq:
         regulador.reiniciar();
-        motor.mover(0, VelocidadPivoteLateral);
+        motor.mover(VelocidadMinima, VelocidadPivoteLateral);
         break;
     case TipoAccion::DefensaDer:
         regulador.reiniciar();
-        motor.mover(VelocidadPivoteLateral, 0);
+        motor.mover(VelocidadPivoteLateral, VelocidadMinima);
+        break;
+    case TipoAccion::AtaqueLateralIzq:
+        regulador.reiniciar();
+        motor.mover(VelocidadCurvaAtaqueLateral, VelocidadMaxima);
+        break;
+    case TipoAccion::AtaqueLateralDer:
+        regulador.reiniciar();
+        motor.mover(VelocidadMaxima, VelocidadCurvaAtaqueLateral);
         break;
     case TipoAccion::Busqueda:
         if (ultimaAccion == TipoAccion::AtaqueFrontal ||
             ultimaAccion == TipoAccion::CorregirIzq ||
             ultimaAccion == TipoAccion::CorregirDer ||
             ultimaAccion == TipoAccion::DefensaIzq ||
-            ultimaAccion == TipoAccion::DefensaDer) {
+            ultimaAccion == TipoAccion::DefensaDer ||
+            ultimaAccion == TipoAccion::AtaqueLateralIzq ||
+            ultimaAccion == TipoAccion::AtaqueLateralDer) {
             motor.mover(-VelocidadMaxima, -VelocidadMaxima);
             break;
         }

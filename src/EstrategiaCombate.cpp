@@ -53,25 +53,22 @@ DecisionMovimiento EstrategiaCombate::decidir(const LecturasSensores& lecturas) 
         return DecisionMovimiento{TipoAccion::Busqueda, 0};
     }
 
-    if (lecturas.frontal || lecturas.c45Izq || lecturas.c45Der) {
-        const int8_t error = calcularErrorDireccion(lecturas);
-        if (lecturas.frontal) {
-            return DecisionMovimiento{TipoAccion::AtaqueFrontal, error};
-        }
+    const int8_t error = calcularErrorDireccion(lecturas);
 
-        if (lecturas.c45Izq) {
-            return DecisionMovimiento{TipoAccion::CorregirIzq, error};
-        }
-
+    if (lecturas.frontal) {
+        return DecisionMovimiento{TipoAccion::AtaqueFrontal, error};
+    }
+    if (lecturas.c45Izq) {
+        return DecisionMovimiento{TipoAccion::CorregirIzq, error};
+    }
+    if (lecturas.c45Der) {
         return DecisionMovimiento{TipoAccion::CorregirDer, error};
     }
-
     if (lecturas.latIzq) {
-        return DecisionMovimiento{TipoAccion::DefensaIzq, 0};
+        return DecisionMovimiento{TipoAccion::AtaqueLateralIzq, error};
     }
-
     if (lecturas.latDer) {
-        return DecisionMovimiento{TipoAccion::DefensaDer, 0};
+        return DecisionMovimiento{TipoAccion::AtaqueLateralDer, error};
     }
 
     return DecisionMovimiento{TipoAccion::Busqueda, 0};

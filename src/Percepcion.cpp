@@ -2,11 +2,10 @@
 #include "Percepcion.H"
 #include "Pines.H"
 
-namespace {
 constexpr uint8_t CICLOS_RETENCION_ENEMIGO = 2;
-constexpr uint8_t MUESTRAS_LINEA = 3;
-constexpr uint8_t MAYORIA_LINEA = 2;
-constexpr int MARGEN_BORDE = 12;
+constexpr uint8_t MUESTRAS_LINEA = 2;
+constexpr uint8_t MAYORIA_LINEA = 1;
+constexpr int MARGEN_BORDE = 18;
 constexpr uint8_t RETENCION_BITS = 2;
 constexpr uint16_t RETENCION_MASK = (1u << RETENCION_BITS) - 1u;
 constexpr uint8_t RETENCION_LAT_IZQ = 0;
@@ -15,7 +14,8 @@ constexpr uint8_t RETENCION_FRONTAL = 2;
 constexpr uint8_t RETENCION_C45_DER = 3;
 constexpr uint8_t RETENCION_LAT_DER = 4;
 
-bool detectarLineaSeguro(uint8_t pin) {
+
+bool Percepcion::detectarLineaSeguro(uint8_t pin) {
     uint8_t activas = 0;
     for (uint8_t muestra = 0; muestra < MUESTRAS_LINEA; ++muestra) {
         activas += (analogRead(pin) <= (BLANCO + MARGEN_BORDE)) ? 1 : 0;
@@ -30,22 +30,21 @@ bool detectarLineaSeguro(uint8_t pin) {
     }
     return activas >= MAYORIA_LINEA;
 }
-}
 
 bool Percepcion::lecturaDigitalMayoritaria(int pin) {
     uint8_t activos = 0;
-    for (uint8_t muestra = 0; muestra < 3; ++muestra) {
+    for (uint8_t muestra = 0; muestra < MUESTRAS_LINEA; ++muestra) {
         activos += (digitalRead(pin) == HIGH) ? 1 : 0;
-        if (activos >= 2) {
+        if (activos >= MAYORIA_LINEA) {
             return true;
         }
 
-        const uint8_t restantes = static_cast<uint8_t>((2u) - muestra);
-        if (static_cast<uint8_t>(activos + restantes) < 2u) {
+        const uint8_t restantes = static_cast<uint8_t>((MUESTRAS_LINEA - 1u) - muestra);
+        if (static_cast<uint8_t>(activos + restantes) < MAYORIA_LINEA) {
             return false;
         }
     }
-    return activos >= 2;
+    return activos >= MAYORIA_LINEA;
 }
 
 uint8_t Percepcion::obtenerRetencion(uint8_t indice) const {
@@ -78,6 +77,8 @@ LecturasSensores Percepcion::leer() const {
     LecturasSensores lecturas;
     lecturas.lineaIzq = detectarLineaSeguro(S_PISO_IZQ);
     lecturas.lineaDer = detectarLineaSeguro(S_PISO_DER);
+
+    // Todos los sensores de detección de enemigo son digitales
     lecturas.latIzq = aplicarRetencion(RETENCION_LAT_IZQ, lecturaDigitalMayoritaria(S_LAT_IZQ));
     lecturas.c45Izq = aplicarRetencion(RETENCION_C45_IZQ, lecturaDigitalMayoritaria(S_FRONT_IZQ));
     lecturas.frontal = aplicarRetencion(RETENCION_FRONTAL, lecturaDigitalMayoritaria(S_FRONT_CEN));

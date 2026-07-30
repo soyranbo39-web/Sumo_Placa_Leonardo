@@ -9,7 +9,8 @@
 #define S_FRONT_IZQ  2
 #define S_FRONT_CEN  4
 #define S_FRONT_DER  A5
-#define S_LAT_IZQ    1
+// El pin 1 es TX, usarlo para un sensor puede causar problemas si se usa el puerto serial. Se cambia a 0 (RX).
+#define S_LAT_IZQ    0
 #define S_LAT_DER    A4
 
 
@@ -31,6 +32,7 @@
 #define VelocidadAtaqueFrontal 255
 #define VelocidadBusquedaDer 90
 #define VelocidadPivoteLateral 220
+#define VelocidadCurvaAtaqueLateral 100
 
 
 

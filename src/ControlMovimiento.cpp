@@ -3,16 +3,16 @@
 #include "Pines.H"
 
 namespace {
-constexpr unsigned long RETROCESO_MS = 150;
-constexpr unsigned long GIRO_EVASION_MS = 350;
+constexpr unsigned long RETROCESO_MS = 280;
+constexpr unsigned long GIRO_EVASION_MS = 260;
 constexpr int16_t PID_ESCALA = 16;
 constexpr int16_t PID_KP = 42;
 constexpr int16_t PID_KI = 3;
 constexpr int16_t PID_KD = 18;
 constexpr int16_t INTEGRAL_LIMITE = 400;
 constexpr int16_t CORRECCION_LIMITE = 120;
-constexpr int16_t BUSQUEDA_BASE = 92;
-constexpr int8_t BUSQUEDA_CORRECCIONES[] = {-18, -12, -6, 0, 0, 6, 12, 18};
+constexpr int16_t BUSQUEDA_BASE = 64;
+constexpr int8_t BUSQUEDA_CORRECCIONES[] = {-20, -14, -8, 0, 0, 8, 14, 20};
 constexpr uint8_t BUSQUEDA_FASES = 8;
 constexpr uint8_t BUSQUEDA_FASE_MASK = BUSQUEDA_FASES - 1u;
 constexpr uint8_t BUSQUEDA_FASE_MASCARA = 0x07;
@@ -76,18 +76,31 @@ void ControlMovimiento::ejecutar(const DecisionMovimiento& decision, IMotor& mot
     switch (decision.tipo) {
     case TipoAccion::EvadirBordeIzq:
         regulador.reiniciar();
-        ejecutarEvasion(motor, VelocidadMaxima, -VelocidadMaxima);
+        motor.mover(-VelocidadRetroceso, -VelocidadRetroceso);
+        delay(RETROCESO_MS);
+        motor.mover(0, VelocidadMaxima);
+        delay(GIRO_EVASION_MS);
         break;
     case TipoAccion::EvadirBordeDer:
         regulador.reiniciar();
-        ejecutarEvasion(motor, -VelocidadMaxima, VelocidadMaxima);
+        motor.mover(-VelocidadRetroceso, -VelocidadRetroceso);
+        delay(RETROCESO_MS);
+        motor.mover(VelocidadMaxima, 0);
+        delay(GIRO_EVASION_MS);
         break;
     case TipoAccion::EvadirBordeAmbos:
         regulador.reiniciar();
-        ejecutarEvasion(motor, VelocidadMaxima, -VelocidadMaxima);
+        motor.mover(-VelocidadRetroceso, -VelocidadRetroceso);
+        delay(RETROCESO_MS);
+        if (obtenerSesgoBusqueda() > 0) {
+            motor.mover(0, VelocidadMaxima);
+        } else {
+            motor.mover(VelocidadMaxima, 0);
+        }
+        delay(GIRO_EVASION_MS);
         break;
     case TipoAccion::AtaqueFrontal:
-        moverSuave(motor, VelocidadMaxima, VelocidadMaxima, calcularPID(regulador, decision.error));
+        moverSuave(motor, VelocidadAtaqueFrontal, VelocidadAtaqueFrontal, calcularPID(regulador, decision.error));
         break;
     case TipoAccion::CorregirIzq:
         moverSuave(motor, VelocidadCurva, VelocidadMaxima, calcularPID(regulador, decision.error));
@@ -96,14 +109,28 @@ void ControlMovimiento::ejecutar(const DecisionMovimiento& decision, IMotor& mot
         moverSuave(motor, VelocidadMaxima, VelocidadCurva, calcularPID(regulador, decision.error));
         break;
     case TipoAccion::DefensaIzq:
-        moverSuave(motor, -VelocidadPivoteLateral, VelocidadMaxima, calcularPID(regulador, decision.error));
+        regulador.reiniciar();
+        motor.mover(0, VelocidadPivoteLateral);
         break;
     case TipoAccion::DefensaDer:
-        moverSuave(motor, VelocidadMaxima, -VelocidadPivoteLateral, calcularPID(regulador, decision.error));
+        regulador.reiniciar();
+        motor.mover(VelocidadPivoteLateral, 0);
         break;
     case TipoAccion::Busqueda:
+        if (ultimaAccion == TipoAccion::AtaqueFrontal ||
+            ultimaAccion == TipoAccion::CorregirIzq ||
+            ultimaAccion == TipoAccion::CorregirDer ||
+            ultimaAccion == TipoAccion::DefensaIzq ||
+            ultimaAccion == TipoAccion::DefensaDer) {
+            motor.mover(-VelocidadMaxima, -VelocidadMaxima);
+            break;
+        }
+        ejecutarBusqueda(motor);
+        break;
     default:
         ejecutarBusqueda(motor);
         break;
     }
+
+    ultimaAccion = decision.tipo;
 }

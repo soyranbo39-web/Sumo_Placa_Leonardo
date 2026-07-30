@@ -66,10 +66,50 @@ void test_percepcion_aplica_mayoria_y_retencion(void) {
     TEST_ASSERT_FALSE(cuarta.c45Der);
 }
 
+void test_percepcion_detecta_borde_con_margen_de_seguridad(void) {
+    Percepcion percepcion;
+
+    test_reset_percepcion_stubs();
+    test_set_analog_value(A1, 55);
+    test_set_analog_value(A2, 70);
+
+    LecturasSensores lecturas = percepcion.leer();
+
+    TEST_ASSERT_TRUE(lecturas.lineaIzq);
+    TEST_ASSERT_FALSE(lecturas.lineaDer);
+}
+
+void test_percepcion_500_detecciones_rapidas_con_ruido(void) {
+    Percepcion percepcion;
+    test_reset_percepcion_stubs();
+
+    int deteccionesIzq = 0;
+    int deteccionesDer = 0;
+
+    for (int i = 0; i < 500; ++i) {
+        // Simula ruido cerca del umbral: izquierda mayormente dentro de borde,
+        // derecha mayormente fuera de borde.
+        const int valorIzq = (i % 6 == 0) ? 59 : 56;
+        const int valorDer = (i % 8 == 0) ? 57 : 63;
+
+        test_set_analog_value(A1, valorIzq);
+        test_set_analog_value(A2, valorDer);
+
+        const LecturasSensores lecturas = percepcion.leer();
+        deteccionesIzq += lecturas.lineaIzq ? 1 : 0;
+        deteccionesDer += lecturas.lineaDer ? 1 : 0;
+    }
+
+    TEST_ASSERT_TRUE(deteccionesIzq > 400);
+    TEST_ASSERT_TRUE(deteccionesDer < 100);
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_tipos_de_movimiento_compactos_en_memoria);
     RUN_TEST(test_funciones_matematicas_optimizadas);
     RUN_TEST(test_percepcion_aplica_mayoria_y_retencion);
+    RUN_TEST(test_percepcion_detecta_borde_con_margen_de_seguridad);
+    RUN_TEST(test_percepcion_500_detecciones_rapidas_con_ruido);
     return UNITY_END();
 }

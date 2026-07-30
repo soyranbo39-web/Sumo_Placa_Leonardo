@@ -26,6 +26,7 @@ private:
 
     mutable ReguladorPID regulador;
     mutable uint8_t estadoBusqueda = 0;
+    mutable TipoAccion ultimaAccion = TipoAccion::Busqueda;
 };
 
 #endif

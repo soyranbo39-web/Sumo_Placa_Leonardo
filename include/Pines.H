@@ -28,8 +28,9 @@
 #define VelocidadGiro 200
 #define VelocidadRetroceso 255
 #define VelocidadAvance 160
+#define VelocidadAtaqueFrontal 150
 #define VelocidadBusquedaDer 140
-#define VelocidadPivoteLateral 90
+#define VelocidadPivoteLateral 180
 
 
 

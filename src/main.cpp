@@ -17,8 +17,7 @@ void setup() {
   hardware.inicializarPines();
   estado.setMotor(&motor);
 
-  // Tiempo reglamentario de inicio
-  delay(5000);
+
 }
 
 void loop() {

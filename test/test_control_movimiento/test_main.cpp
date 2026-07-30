@@ -39,8 +39,8 @@ void test_ataque_frontal_velocidades_correctas(void) {
     c.ejecutar({TipoAccion::AtaqueFrontal}, m);
 
     TEST_ASSERT_EQUAL_INT(1, m.calls);
-    TEST_ASSERT_EQUAL_INT(VelocidadMaxima, m.izq[0]);
-    TEST_ASSERT_EQUAL_INT(VelocidadMaxima, m.der[0]);
+    TEST_ASSERT_EQUAL_INT(VelocidadAtaqueFrontal, m.izq[0]);
+    TEST_ASSERT_EQUAL_INT(VelocidadAtaqueFrontal, m.der[0]);
     TEST_ASSERT_EQUAL_INT(0, g_delayCallCount);
 }
 
@@ -54,12 +54,12 @@ void test_evadir_borde_izq_hace_retroceso_y_giro_con_delays(void) {
     TEST_ASSERT_EQUAL_INT(2, m.calls);
     TEST_ASSERT_EQUAL_INT(-VelocidadRetroceso, m.izq[0]);
     TEST_ASSERT_EQUAL_INT(-VelocidadRetroceso, m.der[0]);
-    TEST_ASSERT_EQUAL_INT(VelocidadMaxima, m.izq[1]);
-    TEST_ASSERT_EQUAL_INT(-VelocidadMaxima, m.der[1]);
+    TEST_ASSERT_EQUAL_INT(0, m.izq[1]);
+    TEST_ASSERT_EQUAL_INT(VelocidadMaxima, m.der[1]);
 
     TEST_ASSERT_EQUAL_INT(2, g_delayCallCount);
-    TEST_ASSERT_EQUAL_UINT32(150, g_delayValues[0]);
-    TEST_ASSERT_EQUAL_UINT32(350, g_delayValues[1]);
+    TEST_ASSERT_EQUAL_UINT32(280, g_delayValues[0]);
+    TEST_ASSERT_EQUAL_UINT32(260, g_delayValues[1]);
 }
 
 void test_busqueda_por_defecto(void) {
@@ -89,6 +89,8 @@ void test_busqueda_barre_lentamente_el_ring(void) {
     TEST_ASSERT_EQUAL_INT(m.izq[3], m.der[3]);
     TEST_ASSERT_EQUAL_INT(m.izq[4], m.der[4]);
     TEST_ASSERT_TRUE(m.izq[7] < m.der[7]);
+    TEST_ASSERT_TRUE(m.izq[0] < VelocidadMaxima);
+    TEST_ASSERT_TRUE(m.der[0] < VelocidadMaxima);
 }
 
 void test_busqueda_recuerda_el_ultimo_lado_detectado(void) {
@@ -98,9 +100,38 @@ void test_busqueda_recuerda_el_ultimo_lado_detectado(void) {
 
     c.ejecutar({TipoAccion::AtaqueFrontal, 4}, m);
     c.ejecutar({TipoAccion::Busqueda}, m);
+    c.ejecutar({TipoAccion::Busqueda}, m);
 
-    TEST_ASSERT_EQUAL_INT(2, m.calls);
-    TEST_ASSERT_TRUE(m.izq[1] < m.der[1]);
+    TEST_ASSERT_EQUAL_INT(3, m.calls);
+    TEST_ASSERT_EQUAL_INT(-VelocidadMaxima, m.izq[1]);
+    TEST_ASSERT_EQUAL_INT(-VelocidadMaxima, m.der[1]);
+    TEST_ASSERT_TRUE(m.izq[2] < m.der[2]);
+}
+
+void test_defensa_izq_hace_pivote_con_una_sola_llanta(void) {
+    ControlMovimiento c;
+    MotorMock m;
+    resetDelays();
+
+    c.ejecutar({TipoAccion::DefensaIzq}, m);
+
+    TEST_ASSERT_EQUAL_INT(1, m.calls);
+    TEST_ASSERT_EQUAL_INT(0, m.izq[0]);
+    TEST_ASSERT_EQUAL_INT(VelocidadPivoteLateral, m.der[0]);
+    TEST_ASSERT_EQUAL_INT(0, g_delayCallCount);
+}
+
+void test_defensa_der_hace_pivote_con_una_sola_llanta(void) {
+    ControlMovimiento c;
+    MotorMock m;
+    resetDelays();
+
+    c.ejecutar({TipoAccion::DefensaDer}, m);
+
+    TEST_ASSERT_EQUAL_INT(1, m.calls);
+    TEST_ASSERT_EQUAL_INT(VelocidadPivoteLateral, m.izq[0]);
+    TEST_ASSERT_EQUAL_INT(0, m.der[0]);
+    TEST_ASSERT_EQUAL_INT(0, g_delayCallCount);
 }
 
 int main(int, char**) {
@@ -110,5 +141,7 @@ int main(int, char**) {
     RUN_TEST(test_busqueda_por_defecto);
     RUN_TEST(test_busqueda_barre_lentamente_el_ring);
     RUN_TEST(test_busqueda_recuerda_el_ultimo_lado_detectado);
+    RUN_TEST(test_defensa_izq_hace_pivote_con_una_sola_llanta);
+    RUN_TEST(test_defensa_der_hace_pivote_con_una_sola_llanta);
     return UNITY_END();
 }

@@ -16,4 +16,5 @@ constexpr int16_t promedioEntero(int16_t acumulado, int16_t cantidad) {
     return (cantidad == 0) ? 0 : static_cast<int16_t>(acumulado / cantidad);
 }
 
+
 #endif

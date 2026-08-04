@@ -1,12 +1,18 @@
 #include <Arduino.h>
 #include "ControlMovimiento.H"
 #include "Pines.H"
-#include "UtilMatematica.H" // <-- ¡Aquí está la corrección!
+#include "UtilMatematica.H"
 
 namespace {
-// -- TIEMPOS DE EVASIÓN ASÍNCRONA --
+// -- TIEMPOS DE EVASIÓN Y PREDICCIÓN --
 constexpr unsigned long RETROCESO_MS = 300;     
 constexpr unsigned long GIRO_EVASION_MS = 250;  
+
+// ODOMETRÍA CONTEXTUAL (Ajusta estos dos valores en tus pruebas)
+constexpr unsigned long TIEMPO_CRUCE_RADIO = 200;    // Tiempo del centro al borde
+constexpr unsigned long TIEMPO_CRUCE_DIAMETRO = 450; // Tiempo de un borde al otro borde
+
+unsigned long limiteCruceActual = TIEMPO_CRUCE_RADIO; // Inicia asumiendo que está en el centro
 
 // -- PID COMPETITIVO --
 constexpr int16_t PID_ESCALA = 16;
@@ -42,27 +48,58 @@ void ControlMovimiento::actualizarBusqueda(int8_t error) const {
 }
 
 void ControlMovimiento::ejecutarBusqueda(IMotor& motor) const {
-    // -- NUEVA ESTRATEGIA: BÚSQUEDA EN ARCO CURVO --
-    // El robot no se queda en su lugar. Avanza dibujando un arco amplio 
-    // hacia la última dirección donde registró al enemigo.
-    constexpr int16_t VelAvanceBase = 90;  // Velocidad de la rueda interior (avanza)
-    constexpr int16_t VelGiroExterior = 180; // Velocidad de la rueda exterior (gira y empuja)
+    static unsigned long ultimaVezLlamado = 0;
+    static unsigned long inicioAvanceRecto = 0;
+    static unsigned long ultimoCambioAleatorio = 0;
+    
+    static int16_t velIzqAleatoria = VelocidadMaxima;
+    static int16_t velDerAleatoria = VelocidadMaxima;
+    static bool modoPanicoAnticipado = false;
 
-    if (obtenerSesgoBusqueda() > 0) {
-        // Perdió al enemigo por la derecha: Arco agresivo hacia la derecha
-        moverSuave(motor, VelGiroExterior, VelAvanceBase, 0);
-    } else {
-        // Perdió al enemigo por la izquierda: Arco agresivo hacia la izquierda
-        moverSuave(motor, VelAvanceBase, VelGiroExterior, 0);
+    if (millis() - ultimaVezLlamado > 50) {
+        inicioAvanceRecto = millis();
+        modoPanicoAnticipado = false;
     }
+    ultimaVezLlamado = millis();
+
+    // 1. RADAR DE TIEMPO INTELIGENTE (Usa el límite actual según dónde esté)
+    if (!modoPanicoAnticipado && velIzqAleatoria == VelocidadMaxima && velDerAleatoria == VelocidadMaxima) {
+        if (millis() - inicioAvanceRecto > limiteCruceActual) {
+            modoPanicoAnticipado = true;
+            ultimoCambioAleatorio = millis(); 
+            
+            if (obtenerSesgoBusqueda() > 0) { velIzqAleatoria = VelocidadMaxima; velDerAleatoria = -100; }
+            else { velIzqAleatoria = -100; velDerAleatoria = VelocidadMaxima; }
+        }
+    }
+
+    // 2. BÚSQUEDA ALEATORIA NORMAL
+    if (millis() - ultimoCambioAleatorio > (modoPanicoAnticipado ? 250 : 400)) {
+        ultimoCambioAleatorio = millis();
+        modoPanicoAnticipado = false;
+        
+        long suerte = random(0, 100);
+        
+        if (suerte < 60) {
+            velIzqAleatoria = VelocidadMaxima;
+            velDerAleatoria = VelocidadMaxima;
+            inicioAvanceRecto = millis(); 
+        } else if (suerte < 80) {
+            velIzqAleatoria = VelocidadMaxima / 2;
+            velDerAleatoria = VelocidadMaxima;
+        } else {
+            velIzqAleatoria = VelocidadMaxima;
+            velDerAleatoria = VelocidadMaxima / 2;
+        }
+    }
+
+    moverSuave(motor, velIzqAleatoria, velDerAleatoria, 0);
 }
 
 void ControlMovimiento::ejecutar(const DecisionMovimiento& decision, IMotor& motor) const {
     if (decision.error != 0) actualizarBusqueda(decision.error);
 
-    // 1. CORRECCIÓN: CANCELACIÓN DE EVASIÓN (INTERRUPCIÓN TÁCTICA)
-    // Si el robot estaba evadiendo, PERO ya dejó de pisar la línea blanca 
-    // y un enemigo se le cruza, cancela la maniobra de inmediato y ataca.
+    // 1. CANCELACIÓN DE EVASIÓN (INTERRUPCIÓN TÁCTICA)
     bool esAtaque = (decision.tipo == TipoAccion::AtaqueFrontal || 
                      decision.tipo == TipoAccion::CorregirIzq ||
                      decision.tipo == TipoAccion::CorregirDer ||
@@ -70,29 +107,45 @@ void ControlMovimiento::ejecutar(const DecisionMovimiento& decision, IMotor& mot
                      decision.tipo == TipoAccion::AtaqueLateralDer);
 
     if (esAtaque && faseEvasion > 0) {
-        faseEvasion = 0; // Cancela el retroceso o giro restante
+        faseEvasion = 0; 
     }
 
-    // 2. INICIAR MÁQUINA DE ESTADOS (FSM) DE EVASIÓN
+    // 2. INICIAR MÁQUINA DE ESTADOS (FSM) DE EVASIÓN FÍSICA
     if ((decision.tipo == TipoAccion::EvadirBordeIzq || 
          decision.tipo == TipoAccion::EvadirBordeDer || 
          decision.tipo == TipoAccion::EvadirBordeAmbos) && faseEvasion == 0) {
+        
         faseEvasion = 1;
         tiempoInicioEvasion = millis();
         tipoEvasionActual = decision.tipo;
+
+        // ¡IMPORTANTE! El robot tocó físicamente la línea.
+        // Ahora sabemos con certeza que está en la orilla del dojo.
+        // Le damos permiso para usar el temporizador largo en su siguiente avance.
+        limiteCruceActual = TIEMPO_CRUCE_DIAMETRO;
     }
 
-    // 3. EJECUTAR EVASIÓN ASÍNCRONA
+    // 3. EJECUTAR EVASIÓN DINÁMICA ASÍNCRONA
     if (faseEvasion > 0) {
         unsigned long transcurrido = millis() - tiempoInicioEvasion;
         
-        if (faseEvasion == 1) { // Fase de Reversa
-            motor.mover(-VelocidadMaxima, -VelocidadMaxima);
+        if (faseEvasion == 1) { // FASE 1: RETROCESO INTELIGENTE
+            if (tipoEvasionActual == TipoAccion::EvadirBordeIzq) {
+                moverSuave(motor, -VelocidadMaxima, -100, 0); 
+            } 
+            else if (tipoEvasionActual == TipoAccion::EvadirBordeDer) {
+                moverSuave(motor, -100, -VelocidadMaxima, 0);
+            } 
+            else { 
+                motor.mover(-VelocidadMaxima, -VelocidadMaxima);
+            }
+
             if (transcurrido >= RETROCESO_MS) {
                 faseEvasion = 2; 
                 tiempoInicioEvasion = millis(); 
             }
-        } else if (faseEvasion == 2) { // Fase de Giro Rápido
+            
+        } else if (faseEvasion == 2) { // FASE 2: GIRO DE POSICIONAMIENTO
             if (tipoEvasionActual == TipoAccion::EvadirBordeIzq) {
                 moverSuave(motor, VelocidadMaxima, -VelocidadMaxima, 0);
             } else if (tipoEvasionActual == TipoAccion::EvadirBordeDer) {
